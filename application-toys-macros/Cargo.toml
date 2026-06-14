@@ -5,7 +5,6 @@ edition = "2024"
 rust-version = "1.85"
 authors = ["Soumyo Deep Gupta <deep.main.ac@gmail.com>"]
 description = "Procedural macros for application-toys — makes async trait methods dyn-compatible via #[asynchronous]"
-license = "MIT"
 license-file = "LICENSE"
 readme = "README.md"
 repository = "https://github.com/d33p0st/application-toys"
