@@ -1,0 +1,31 @@
+[package]
+name = "application-toys-macros"
+version = "0.0.1"
+edition = "2024"
+rust-version = "1.85"
+authors = ["Soumyo Deep Gupta <deep.main.ac@gmail.com>"]
+description = "Procedural macros for application-toys — makes async trait methods dyn-compatible via #[asynchronous]"
+license = "MIT"
+license-file = "LICENSE"
+readme = "README.md"
+repository = "https://github.com/d33p0st/application-toys"
+homepage = "https://github.com/d33p0st/application-toys"
+documentation = "https://docs.rs/application-toys-macros"
+keywords = ["async", "proc-macro", "trait", "dyn", "future"]
+categories = ["rust-patterns", "asynchronous", "development-tools::procedural-macro-helpers"]
+
+[lib]
+name = "toys_macros"
+proc-macro = true
+
+[features]
+default = []
+asynchronous-traits = []
+
+[dependencies]
+syn = { version = "2", features = ["full"] }
+quote = "1"
+proc-macro2 = "1"
+
+[dev-dependencies]
+tokio = { version = "1", features = ["full"] }
