@@ -1,10 +1,8 @@
 use proc_macro::TokenStream;
-use proc_macro2::{Span, TokenStream as TokenStream2};
+use proc_macro2::Span;
 use quote::quote;
 use syn::{
-    parse_macro_input, Fields, FieldsUnnamed, ItemEnum, Type,
-    punctuated::Punctuated,
-    token::Paren,
+    Fields, FieldsUnnamed, ItemEnum, Type, parse_macro_input, punctuated::Punctuated, token::Paren,
 };
 
 pub fn responsible_macro(_attr: TokenStream, item: TokenStream) -> TokenStream {

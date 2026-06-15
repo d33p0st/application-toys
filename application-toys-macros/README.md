@@ -4,16 +4,25 @@ Procedural macros for the [`application-toys`](https://crates.io/crates/applicat
 
 ## Overview
 
-This crate provides the `#[asynchronous]` attribute macro, which makes `async fn` methods in `trait` and `impl` blocks **dyn-compatible** (object-safe) by rewriting them to return `Pin<Box<dyn Future<Output = T> + Send + Sync + 'lt>>`.
+This crate provides two attribute macros:
 
-> **Note:** You normally do not depend on this crate directly — use `application-toys` with the `event` feature instead, which re-exports `#[asynchronous]` as `toys::asynchronous`.
+- **`#[asynchronous]`** — makes `async fn` methods in `trait` and `impl` blocks **dyn-compatible** by rewriting them to return `Pin<Box<dyn Future<Output = T> + Send + Sync + 'lt>>`.
+- **`#[responsible]`** — appends a `tokio::sync::oneshot::Sender<T>` to marked enum variants, enforcing a request/response ownership pattern at the type level.
 
-## Usage
+> **Note:** You normally do not depend on this crate directly — use `application-toys` with the `event` feature instead, which activates both macros.
 
-```toml
-[dependencies]
-application-toys-macros = "0.0.1"
-```
+## Features
+
+| Feature | Default | Description |
+|---------|:-------:|-------------|
+| `asynchronous-traits` | | Enables `#[asynchronous]` |
+| `event` | | Enables `#[responsible]` |
+
+---
+
+## `#[asynchronous]`
+
+Apply to a **trait** or **impl** block to make every `async fn` inside it return a boxed, dyn-compatible future.
 
 ### Trait declaration
 
@@ -87,25 +96,66 @@ Pass comma-separated flags inside the attribute:
 ```rust
 use toys_macros::asynchronous;
 
-// Single-threaded runtimes
 #[asynchronous(local)]
 pub trait LocalWorker {
     async fn run(&self) -> u32;
 }
 ```
 
-## Lifetime inference
+### Lifetime inference
 
 | Receiver | Future lifetime |
 |----------|----------------|
 | `&self` / `&mut self` | `'async_trait` (tied to the borrow) |
 | `self`, `self: Arc<Self>`, or no receiver | `'static` |
 
-## Features
+---
 
-| Feature | Default | Description |
-|---------|:-------:|-------------|
-| `asynchronous-traits` | | Enables the `#[asynchronous]` macro (activated automatically by `application-toys`) |
+## `#[responsible]`
+
+Apply to an **enum**. Mark individual variants with `#[responsible(ResponseType)]` to append a `tokio::sync::oneshot::Sender<ResponseType>` to that variant's fields.
+
+This forces every caller constructing the variant to create a oneshot channel and pass the sender in, while retaining the receiver to await the response.
+
+### Example
+
+```rust
+use toys_macros::responsible;
+
+#[responsible]
+enum Command {
+    Shutdown,
+    #[responsible(String)]
+    GetName,
+    #[responsible(u32)]
+    Compute(String, String, u32),
+}
+```
+
+Expands to:
+
+```rust
+enum Command {
+    Shutdown,
+    GetName(tokio::sync::oneshot::Sender<String>),
+    Compute(String, String, u32, tokio::sync::oneshot::Sender<u32>),
+}
+```
+
+### Caller pattern
+
+```rust
+let (tx, rx) = tokio::sync::oneshot::channel::<u32>();
+sender.send(Command::Compute("a".into(), "b".into(), 1, tx)).unwrap();
+let result = rx.await.unwrap();
+```
+
+### Constraints
+
+- Only tuple (unnamed-field) and unit variants are supported. Named-field variants produce a compile error.
+- Multiple `#[responsible]` attributes on the same variant — only the first is processed.
+
+---
 
 ## License
 
