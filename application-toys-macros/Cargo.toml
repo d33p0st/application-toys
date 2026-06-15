@@ -20,6 +20,7 @@ proc-macro = true
 [features]
 default = []
 asynchronous-traits = []
+event = []
 
 [dependencies]
 syn = { version = "2", features = ["full"] }

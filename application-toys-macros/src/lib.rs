@@ -17,6 +17,9 @@ extern crate proc_macro;
 #[cfg(feature = "asynchronous-traits")]
 mod r#async;
 
+#[cfg(feature = "event")]
+mod responsible;
+
 /// Make `async fn` methods in a `trait` or `impl` block dyn-compatible by
 /// rewriting them to return `Pin<Box<dyn Future<Output = T> + Send + Sync + 'lt>>`.
 ///
@@ -134,4 +137,36 @@ pub fn asynchronous(
     item: proc_macro::TokenStream,
 ) -> proc_macro::TokenStream {
     r#async::asynchronous_macro(attr, item)
+}
+
+/// Appends a [`tokio::sync::oneshot::Sender<T>`] to enum variants marked with
+/// `#[responsible(T)]`, forcing callers to supply a oneshot channel sender.
+///
+/// Apply this attribute to the **enum definition**. Mark individual variants
+/// with `#[responsible(ResponseType)]` as a helper attribute:
+///
+/// ```rust,ignore
+/// use toys_macros::responsible;
+///
+/// #[responsible]
+/// enum Command {
+///     Quit,
+///     GetValue(String, #[responsible] ...),
+///     #[responsible(u32)]
+///     Compute(String),   // becomes Compute(String, tokio::sync::oneshot::Sender<u32>)
+///     #[responsible(String)]
+///     Ping,              // becomes Ping(tokio::sync::oneshot::Sender<String>)
+/// }
+/// ```
+///
+/// The caller must create a `tokio::sync::oneshot::channel::<T>()`, pass the
+/// `Sender` when constructing the variant, and await the `Receiver` for the
+/// response.
+#[cfg(feature = "event")]
+#[proc_macro_attribute]
+pub fn responsible(
+    attr: proc_macro::TokenStream,
+    item: proc_macro::TokenStream,
+) -> proc_macro::TokenStream {
+    responsible::responsible_macro(attr, item)
 }
